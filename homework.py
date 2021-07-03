@@ -1,3 +1,6 @@
+"""Telegram-бот. Уведомляет об измении статуса проверки домашней работы ЯП."""
+
+
 import logging
 import os
 import time
@@ -33,17 +36,16 @@ handler = RotatingFileHandler(
 )
 logger.addHandler(handler)
 
-# проинициализируйте бота здесь,
-# чтобы он был доступен в каждом нижеобъявленном методе,
-# и не нужно было прокидывать его в каждый вызов
 bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
 def send_message(message):
+    """Отправляет сообщение в Telegram в указаный чат."""
     return bot.send_message(CHAT_ID, message)
 
 
 def parse_homework_status(homework):
+    """Генерирует варианты ответов для бота."""
     try:
         homework_name = homework['homework_name']
         homework_status = homework['status']
@@ -68,6 +70,7 @@ def parse_homework_status(homework):
 
 
 def get_homeworks(current_timestamp):
+    """Опрашивает API Практикум.Домашка."""
     url = 'https://praktikum.yandex.ru/api/user_api/homework_statuses/'
     headers = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
     payload = {'from_date': current_timestamp}
@@ -90,7 +93,8 @@ def get_homeworks(current_timestamp):
 
 
 def main():
-    current_timestamp = int(time.time())  # Начальное значение timestamp
+    """Задает цикл работы бота."""
+    current_timestamp = int(time.time())
     time_before_sleep = current_timestamp - SLEEP_LENGTH
 
     while True:
@@ -104,7 +108,7 @@ def main():
                 message = parse_homework_status(current_homework)
                 send_message(message)
                 logger.info('Message has been sent.')
-            time.sleep(SLEEP_LENGTH)  # Опрашивать раз в пять минут
+            time.sleep(SLEEP_LENGTH)
 
         except Exception as error:
             logger.error(error, exc_info=True)
