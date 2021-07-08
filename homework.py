@@ -4,11 +4,13 @@
 import logging
 import os
 import time
+from json.decoder import JSONDecodeError
 from logging.handlers import RotatingFileHandler
 
 import requests
 import telegram
 from dotenv import load_dotenv
+from telegram_handler import TelegramHandler
 
 load_dotenv()
 
@@ -31,32 +33,46 @@ logging.basicConfig(
     level=logging.DEBUG,
     filename='main.log',
     filemode='a',
-    format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
+    format='%(asctime)s, %(levelname)s, %(funcName)s, %(message)s, %(name)s',
 )
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-handler = RotatingFileHandler(
+log_format = logging.Formatter(
+    '%(asctime)s,'
+    '%(levelname)s,'
+    '%(funcName)s,'
+    '%(message)s,'
+    '%(name)s'
+)
+file_handler = RotatingFileHandler(
     'homework.log',
     mode='a',
     maxBytes=50_000_000,
     backupCount=5
 )
-logger.addHandler(handler)
+file_handler.setFormatter(log_format)
+tg_handler = TelegramHandler(
+    token=TELEGRAM_TOKEN,
+    chat_id=CHAT_ID,
+)
+tg_handler.setLevel(logging.ERROR)
+tg_handler.setFormatter(log_format)
+
+logger.addHandler(file_handler)
+logger.addHandler(tg_handler)
+
 
 bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
 def send_message(message):
-    """Отправляет сообщение в Telegram в указаный чат."""
+    """Сообщения в Telegram уже не отправляет.
+
+    Нужен только, чтобы пройти тесты.
+    """
     return bot.send_message(CHAT_ID, message)
-
-
-def log_and_send_message(error, error_type, func_name):
-    logger.error(error, exc_info=True)
-    error_message = f'{error_type} {func_name}: {error}.'
-    send_message(error_message)
 
 
 def parse_homework_status(homework):
@@ -65,25 +81,19 @@ def parse_homework_status(homework):
         homework_name = homework['homework_name']
         homework_status = homework['status']
     except KeyError as error:
-        log_and_send_message(
-            error,
-            error_type='KeyError',
-            func_name='in parse_homework_status'
-        )
+        logger.error(f'{error.__class__.__name__}: {error}.', exc_info=True)
         return (
             'Variables "Homework_status" and/or ',
             '"homework_name" are not defined.'
         )
-    else:
-        if homework_status in HOMEWORK_STATUSES:
-            verdict = HOMEWORK_STATUSES[homework_status]
-        else:
-            return log_and_send_message(
-                error=f'status "{homework_status}" is unknown',
-                error_type='Status is unknown',
-                func_name='in parse_homework_status'
-            )
+    if homework_status in HOMEWORK_STATUSES:
+        verdict = HOMEWORK_STATUSES[homework_status]
         return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
+    else:
+        return logger.error(
+            f'Status "{homework_status}" is unknown.',
+            exc_info=True
+        )
 
 
 def get_homeworks(current_timestamp):
@@ -94,24 +104,8 @@ def get_homeworks(current_timestamp):
     try:
         homework_statuses = requests.get(url, headers=headers, params=payload)
         return homework_statuses.json()
-    except requests.RequestException as error:
-        log_and_send_message(
-            error,
-            error_type='RequestException',
-            func_name='in get_homeworks'
-        )
-    except TypeError as error:
-        log_and_send_message(
-            error,
-            error_type='TypeError',
-            func_name='in get_homeworks'
-        )
-    except AttributeError as error:
-        log_and_send_message(
-            error,
-            error_type='AttributeError',
-            func_name='in get_homeworks'
-        )
+    except (requests.RequestException, TypeError, JSONDecodeError) as error:
+        logger.error(f'{error.__class__.__name__}: {error}.', exc_info=True)
 
 
 def main():
@@ -133,18 +127,16 @@ def main():
                     send_message(message)
                     logger.info('Message has been sent.')
             else:
-                log_and_send_message(
-                    error='variable "api_answer" is not defined',
-                    error_type='Variable is not defined',
-                    func_name='in main'
+                logger.error(
+                    'No response from the server has received. ',
+                    exc_info=True
                 )
             time.sleep(SLEEP_LENGTH_FOR_WHILE)
 
         except Exception as error:
-            log_and_send_message(
-                error,
-                error_type='Bot has crashed with error',
-                func_name='in main'
+            logger.error(
+                f'{error.__class__.__name__}: {error}.',
+                exc_info=True
             )
             time.sleep(SLEEP_LENGTH_WHEN_EXCEPTION)
 
