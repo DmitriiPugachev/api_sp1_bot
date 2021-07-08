@@ -68,10 +68,7 @@ bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
 
 def send_message(message):
-    """Сообщения в Telegram уже не отправляет.
-
-    Нужен только, чтобы пройти тесты.
-    """
+    """Отправляет сообщения в Telegram."""
     return bot.send_message(CHAT_ID, message)
 
 
