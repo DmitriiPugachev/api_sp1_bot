@@ -101,7 +101,7 @@ def parse_homework_status(homework):
 
 def get_homeworks(current_timestamp):
     """Опрашивает API Практикум.Домашка."""
-    url = PRAKTIKUM_API_URL + 'homework_statuses'
+    url = PRAKTIKUM_API_URL + 'homework_statuses/'
     headers = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
     payload = {'from_date': current_timestamp}
     try:
