@@ -29,42 +29,43 @@ HOMEWORK_STATUSES = {
 SLEEP_LENGTH_FOR_WHILE = 5 * 60
 SLEEP_LENGTH_WHEN_EXCEPTION = 30
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename='main.log',
-    filemode='a',
-    format='%(asctime)s, %(levelname)s, %(funcName)s, %(message)s, %(name)s',
-)
-
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-log_format = logging.Formatter(
-    '%(asctime)s,'
-    '%(levelname)s,'
-    '%(funcName)s,'
-    '%(message)s,'
-    '%(name)s'
-)
-file_handler = RotatingFileHandler(
-    'homework.log',
-    mode='a',
-    maxBytes=50_000_000,
-    backupCount=5
-)
-file_handler.setFormatter(log_format)
-tg_handler = TelegramHandler(
-    token=TELEGRAM_TOKEN,
-    chat_id=CHAT_ID,
-)
-tg_handler.setLevel(logging.ERROR)
-tg_handler.setFormatter(log_format)
-
-logger.addHandler(file_handler)
-logger.addHandler(tg_handler)
-
-
 bot = telegram.Bot(token=TELEGRAM_TOKEN)
+logger = logging.getLogger(__name__)
+
+
+def logging_setup():
+    """Настраивает логер."""
+    logger.setLevel(logging.DEBUG)
+    log_format_file = logging.Formatter(
+        '%(asctime)s, '
+        '%(levelname)s, '
+        '%(funcName)s, '
+        '%(message)s, '
+        '%(name)s'
+    )
+    file_handler = RotatingFileHandler(
+        'homework.log',
+        mode='a',
+        maxBytes=50_000_000,
+        backupCount=5
+    )
+    file_handler.setFormatter(log_format_file)
+    log_format_tg = logging.Formatter(
+        'Time: %(asctime)s, \n'
+        'Level: %(levelname)s, \n'
+        'In function: %(funcName)s, \n'
+        '%(message)s, \n'
+        '%(name)s'
+    )
+    tg_handler = TelegramHandler(
+        token=TELEGRAM_TOKEN,
+        chat_id=CHAT_ID,
+    )
+    tg_handler.setLevel(logging.ERROR)
+    tg_handler.setFormatter(log_format_tg)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(tg_handler)
 
 
 def send_message(message):
@@ -78,7 +79,11 @@ def parse_homework_status(homework):
         homework_name = homework['homework_name']
         homework_status = homework['status']
     except KeyError as error:
-        logger.error(f'{error.__class__.__name__}: {error}.', exc_info=True)
+        logger.error(
+            f'Bot has fallen with error: {error.__class__.__name__}.\n'
+            f'Error description: {error}.',
+            exc_info=True
+        )
         return (
             'Variables "Homework_status" and/or ',
             '"homework_name" are not defined.'
@@ -87,26 +92,31 @@ def parse_homework_status(homework):
         verdict = HOMEWORK_STATUSES[homework_status]
         return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
     else:
-        return logger.error(
+        logger.error(
             f'Status "{homework_status}" is unknown.',
             exc_info=True
         )
+        return f'Status "{homework_status}" is unknown.'
 
 
 def get_homeworks(current_timestamp):
     """Опрашивает API Практикум.Домашка."""
-    url = f'{PRAKTIKUM_API_URL}homework_statuses/'
+    url = PRAKTIKUM_API_URL + 'homework_statuses'
     headers = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
     payload = {'from_date': current_timestamp}
     try:
         homework_statuses = requests.get(url, headers=headers, params=payload)
         return homework_statuses.json()
     except (requests.RequestException, TypeError, JSONDecodeError) as error:
-        logger.error(f'{error.__class__.__name__}: {error}.', exc_info=True)
+        logger.error(
+            f'Bot has fallen with error: {error.__class__.__name__}.\n'
+            f'Error description: {error}.', exc_info=True
+        )
 
 
 def main():
     """Задает цикл работы бота."""
+    logging_setup()
     current_timestamp = int(time.time())
 
     while True:
@@ -125,15 +135,15 @@ def main():
                     logger.info('Message has been sent.')
             else:
                 logger.error(
-                    'No response from the server has received. ',
+                    'No response from the server has been received.',
                     exc_info=True
                 )
             time.sleep(SLEEP_LENGTH_FOR_WHILE)
 
         except Exception as error:
             logger.error(
-                f'{error.__class__.__name__}: {error}.',
-                exc_info=True
+                f'Bot has fallen with error: {error.__class__.__name__}.\n'
+                f'Error description: {error}.', exc_info=True
             )
             time.sleep(SLEEP_LENGTH_WHEN_EXCEPTION)
 
