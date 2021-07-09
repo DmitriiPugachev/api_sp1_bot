@@ -33,7 +33,7 @@ bot = telegram.Bot(token=TELEGRAM_TOKEN)
 logger = logging.getLogger(__name__)
 
 
-def logging_setup():
+def setup_logging():
     """Настраивает логер."""
     logger.setLevel(logging.DEBUG)
     log_format_file = logging.Formatter(
@@ -119,7 +119,7 @@ def get_homeworks(current_timestamp):
 
 def main():
     """Задает цикл работы бота."""
-    logging_setup()
+    setup_logging()
     current_timestamp = int(time.time())
 
     while True:
