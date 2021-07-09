@@ -68,6 +68,15 @@ def logging_setup():
     logger.addHandler(tg_handler)
 
 
+def send_error_message_to_logger(error):
+    """Отправляет сообщение об ошибке уровня ERROR в логер."""
+    return logger.error(
+        f'Bot has failed with error: {error.__class__.__name__}.\n'
+        f'Error description: {error}.',
+        exc_info=True
+    )
+
+
 def send_message(message):
     """Отправляет сообщения в Telegram."""
     return bot.send_message(CHAT_ID, message)
@@ -79,11 +88,7 @@ def parse_homework_status(homework):
         homework_name = homework['homework_name']
         homework_status = homework['status']
     except KeyError as error:
-        logger.error(
-            f'Bot has fallen with error: {error.__class__.__name__}.\n'
-            f'Error description: {error}.',
-            exc_info=True
-        )
+        send_error_message_to_logger(error)
         return (
             'Variables "Homework_status" and/or ',
             '"homework_name" are not defined.'
@@ -92,11 +97,12 @@ def parse_homework_status(homework):
         verdict = HOMEWORK_STATUSES[homework_status]
         return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
     else:
+        current_message = f'Status "{homework_status}" is unknown.'
         logger.error(
-            f'Status "{homework_status}" is unknown.',
+            current_message,
             exc_info=True
         )
-        return f'Status "{homework_status}" is unknown.'
+        return current_message
 
 
 def get_homeworks(current_timestamp):
@@ -108,10 +114,7 @@ def get_homeworks(current_timestamp):
         homework_statuses = requests.get(url, headers=headers, params=payload)
         return homework_statuses.json()
     except (requests.RequestException, TypeError, JSONDecodeError) as error:
-        logger.error(
-            f'Bot has fallen with error: {error.__class__.__name__}.\n'
-            f'Error description: {error}.', exc_info=True
-        )
+        send_error_message_to_logger(error)
 
 
 def main():
@@ -141,10 +144,7 @@ def main():
             time.sleep(SLEEP_LENGTH_FOR_WHILE)
 
         except Exception as error:
-            logger.error(
-                f'Bot has fallen with error: {error.__class__.__name__}.\n'
-                f'Error description: {error}.', exc_info=True
-            )
+            send_error_message_to_logger(error)
             time.sleep(SLEEP_LENGTH_WHEN_EXCEPTION)
 
 
