@@ -1,4 +1,7 @@
-"""Telegram-бот. Уведомляет об измении статуса проверки домашней работы ЯП."""
+"""Bot which checks Yandex.Prakticum homework API.
+
+When homework status is updated, sends a message via Telegram.
+"""
 
 
 import logging
@@ -34,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging():
-    """Настраивает логер."""
+    """Logger settings."""
     logger.setLevel(logging.DEBUG)
     log_format_file = logging.Formatter(
         '%(asctime)s, '
@@ -69,7 +72,7 @@ def setup_logging():
 
 
 def send_error_message_to_logger(error):
-    """Отправляет сообщение об ошибке уровня ERROR в логер."""
+    """Sends an ERROR level message to the logger."""
     return logger.error(
         f'Bot has failed with error: {error.__class__.__name__}.\n'
         f'Error description: {error}.',
@@ -78,12 +81,12 @@ def send_error_message_to_logger(error):
 
 
 def send_message(message):
-    """Отправляет сообщения в Telegram."""
+    """Sends a message to the user via Telegram."""
     return bot.send_message(CHAT_ID, message)
 
 
 def parse_homework_status(homework):
-    """Генерирует варианты ответов для бота."""
+    """Generates answers phrases."""
     try:
         homework_name = homework['homework_name']
         homework_status = homework['status']
@@ -106,7 +109,7 @@ def parse_homework_status(homework):
 
 
 def get_homeworks(current_timestamp):
-    """Опрашивает API Практикум.Домашка."""
+    """Requests Yandex.Prakticum homework API."""
     url = PRAKTIKUM_API_URL + 'homework_statuses/'
     headers = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
     payload = {'from_date': current_timestamp}
@@ -118,7 +121,7 @@ def get_homeworks(current_timestamp):
 
 
 def main():
-    """Задает цикл работы бота."""
+    """Bot working cycle."""
     setup_logging()
     current_timestamp = int(time.time())
 
