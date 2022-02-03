@@ -1,4 +1,4 @@
-"""Bot which checks Yandex.Prakticum homework API.
+"""Bot which checks Yandex.Prakticum API for a homework status.
 
 When homework status is updated, sends a message via Telegram.
 """
@@ -86,7 +86,7 @@ def send_message(message):
 
 
 def parse_homework_status(homework):
-    """Generates answers phrases."""
+    """Generates answer phrases."""
     try:
         homework_name = homework['homework_name']
         homework_status = homework['status']
