@@ -3,7 +3,7 @@ Telegram bot which checks Yandex.Prakticum API for a homework status and sends t
 #### You can:
   * just relax, this bot will check homework status for your;
   * search for new memes in Telegram chats and do nothing, while bot sends you all the status updates;
-  * find all the error messages in .log file, if something went wrong.
+  * find all the error messages in ```.log``` file, if something went wrong.
 #### Techs:
   * certifi==2020.4.5.1
   * cffi==1.14.0
